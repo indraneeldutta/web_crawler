@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-
+	applicationConfig()
 }
 
 func applicationConfig() {

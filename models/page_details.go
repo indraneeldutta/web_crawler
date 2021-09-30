@@ -1,15 +1,14 @@
 package models
 
 type PageDetailsResponse struct {
-	HtmlVersion   string `json:"html_version"`
-	PageTitle     string `json:"page_title"`
-	HeadingsCount int64  `json:"headings_count"`
-	LinksCount    struct {
-		InternalLinks int64 `json:"internal_links_count"`
-		ExternalLinks int64 `json:"external_links_count"`
+	HtmlVersion string `json:"html_version"`
+	PageTitle   string `json:"page_title"`
+	LinksCount  struct {
+		InternalLinks int `json:"internal_links_count"`
+		ExternalLinks int `json:"external_links_count"`
 	} `json:"links_count"`
-	InaccessibleLinks int64 `json:"inaccessible_links"`
-	LoginFormExists   bool  `json:"login_form_exists"`
+	InaccessibleLinks int  `json:"inaccessible_links"`
+	LoginFormExists   bool `json:"login_form_exists"`
 }
 
 type PageDetailsRequest struct {

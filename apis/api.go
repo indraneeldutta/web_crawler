@@ -1,10 +1,10 @@
 package apis
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/web_crawler/models"
@@ -19,7 +19,13 @@ func NewApiController(router *gin.RouterGroup) {
 }
 
 func (a ApiController) getPageDetails(ginCtx *gin.Context) {
-	var request models.PageDetailsRequest
+	var (
+		request                                  models.PageDetailsRequest
+		version, title                           string
+		wg                                       sync.WaitGroup
+		internalLinks, externalLinks, inaccLinks []string
+		checkLoginForm                           bool
+	)
 	err := ginCtx.ShouldBindJSON(&request)
 	if err != nil {
 		log.Println(err)
@@ -27,36 +33,65 @@ func (a ApiController) getPageDetails(ginCtx *gin.Context) {
 		return
 	}
 
-	url := "https://play.golang.org/"
-	resp, err := http.Get(url)
+	resp, err := http.Get(request.Url)
 	if err != nil {
 		log.Println(err)
 	}
-
 	defer resp.Body.Close()
-
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 
-	version, err := services.DetectHTML(bodyBytes)
-	if err != nil {
-		log.Println(err)
-	}
-	title, _ := services.GetHtmlTitle(bodyBytes)
-	fmt.Println(version, title)
+	wg.Add(1)
+	go func(w *sync.WaitGroup) {
+		version, err = services.DetectHTML(bodyBytes)
+		if err != nil {
+			log.Println(err)
+		}
+		w.Done()
+	}(&wg)
 
-	internalLinks, externalLinks, err := services.GetLinks(bodyBytes, url)
-	if err != nil {
-		log.Println(err)
-	}
-	fmt.Println(len(internalLinks), len(externalLinks))
+	wg.Add(1)
+	go func(w *sync.WaitGroup) {
+		title, _ = services.GetHtmlTitle(bodyBytes)
+		w.Done()
+	}(&wg)
+
+	wg.Add(1)
+	go func(w *sync.WaitGroup) {
+		internalLinks, externalLinks, err = services.GetLinks(bodyBytes, request.Url)
+		if err != nil {
+			log.Println(err)
+		}
+		w.Done()
+	}(&wg)
 
 	var allLinks []string
 	allLinks = append(allLinks, internalLinks...)
 	allLinks = append(allLinks, externalLinks...)
 
-	inaccLinks := services.CheckInaccessibleLinks(allLinks)
-	fmt.Println(len(inaccLinks))
+	wg.Add(1)
+	go func(w *sync.WaitGroup) {
+		inaccLinks = services.CheckInaccessibleLinks(allLinks)
+		w.Done()
+	}(&wg)
 
-	checkLoginForm := services.CheckLoginFormExists(bodyBytes)
-	fmt.Println(checkLoginForm)
+	wg.Add(1)
+	go func(w *sync.WaitGroup) {
+		checkLoginForm = services.CheckLoginFormExists(bodyBytes)
+		w.Done()
+	}(&wg)
+
+	wg.Wait()
+
+	var response models.PageDetailsResponse
+
+	response.HtmlVersion = version
+	response.PageTitle = title
+	response.LinksCount.InternalLinks = len(internalLinks)
+	response.LinksCount.ExternalLinks = len(externalLinks)
+	response.InaccessibleLinks = len(inaccLinks)
+	response.LoginFormExists = checkLoginForm
+
+	ginCtx.SecureJSON(http.StatusOK, gin.H{
+		"data": response,
+	})
 }
