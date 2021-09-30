@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -42,22 +43,29 @@ func GetLinks(r []byte, url string) ([]string, []string, error) {
 
 func CheckInaccessibleLinks(links []string) []string {
 	var inaccLinks []string
+	var wg sync.WaitGroup
 	for _, value := range links {
-		if strings.Contains(value, "http") {
-			resp, err := http.Get(value)
-			if err != nil {
-				log.Println(err)
-				inaccLinks = append(inaccLinks, value)
-				continue
+		wg.Add(1)
+		go func(w *sync.WaitGroup, v string) {
+			if strings.Contains(v, "http") {
+				resp, err := http.Get(v)
+				if err != nil {
+					log.Println(err)
+					inaccLinks = append(inaccLinks, v)
+				} else {
+					resp.Body.Close()
+					if resp.StatusCode != 200 {
+						inaccLinks = append(inaccLinks, v)
+					}
+				}
+
+			} else {
+				inaccLinks = append(inaccLinks, v)
 			}
-			resp.Body.Close()
-			if resp.StatusCode != 200 {
-				inaccLinks = append(inaccLinks, value)
-			}
-		} else {
-			inaccLinks = append(inaccLinks, value)
-		}
+			w.Done()
+		}(&wg, value)
 	}
+	wg.Wait()
 	return inaccLinks
 }
 
