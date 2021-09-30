@@ -13,9 +13,11 @@ import (
 
 type ApiController struct{}
 
-func NewApiController(router *gin.RouterGroup) {
+func NewApiController(router *gin.RouterGroup) *ApiController {
 	controller := ApiController{}
 	router.POST("/page/details", controller.getPageDetails)
+
+	return &controller
 }
 
 func (a ApiController) getPageDetails(ginCtx *gin.Context) {
@@ -36,6 +38,8 @@ func (a ApiController) getPageDetails(ginCtx *gin.Context) {
 	resp, err := http.Get(request.Url)
 	if err != nil {
 		log.Println(err)
+		ginCtx.SecureJSON(http.StatusInternalServerError, gin.H{"message": err})
+		return
 	}
 	defer resp.Body.Close()
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
