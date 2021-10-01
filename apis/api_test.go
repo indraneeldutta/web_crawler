@@ -49,7 +49,7 @@ func (suite *ApiControllerTestSuite) TestGetPageDetails() {
 
 	data, _ := json.Marshal(request)
 
-	r, _ := http.NewRequest(http.MethodPost, "/v1/page/details", bytes.NewBuffer(data))
+	r := httptest.NewRequest(http.MethodPost, "/v1/page/details", bytes.NewBuffer(data))
 	w := httptest.NewRecorder()
 	suite.gin.ServeHTTP(w, r)
 
@@ -63,7 +63,7 @@ func (suite *ApiControllerTestSuite) TestGetPageDetails_Error() {
 
 	data, _ := json.Marshal(request)
 
-	r, _ := http.NewRequest(http.MethodPost, "/v1/page/details", bytes.NewBuffer(data))
+	r := httptest.NewRequest(http.MethodPost, "/v1/page/details", bytes.NewBuffer(data))
 	w := httptest.NewRecorder()
 	suite.gin.ServeHTTP(w, r)
 
@@ -73,7 +73,7 @@ func (suite *ApiControllerTestSuite) TestGetPageDetails_Error() {
 func (suite *ApiControllerTestSuite) TestGetPageDetails_BadRequest() {
 	data := `{"url": 12}`
 
-	r, _ := http.NewRequest(http.MethodPost, "/v1/page/details", bytes.NewBuffer([]byte(data)))
+	r := httptest.NewRequest(http.MethodPost, "/v1/page/details", bytes.NewBuffer([]byte(data)))
 	w := httptest.NewRecorder()
 	suite.gin.ServeHTTP(w, r)
 

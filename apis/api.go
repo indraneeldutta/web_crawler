@@ -59,21 +59,16 @@ func (a ApiController) getPageDetails(ginCtx *gin.Context) {
 		w.Done()
 	}(&wg)
 
+	var allLinks []string
+
 	wg.Add(1)
 	go func(w *sync.WaitGroup) {
 		internalLinks, externalLinks, err = services.GetLinks(bodyBytes, request.Url)
 		if err != nil {
 			log.Println(err)
 		}
-		w.Done()
-	}(&wg)
-
-	var allLinks []string
-	allLinks = append(allLinks, internalLinks...)
-	allLinks = append(allLinks, externalLinks...)
-
-	wg.Add(1)
-	go func(w *sync.WaitGroup) {
+		allLinks = append(allLinks, internalLinks...)
+		allLinks = append(allLinks, externalLinks...)
 		inaccLinks = services.CheckInaccessibleLinks(allLinks)
 		w.Done()
 	}(&wg)
