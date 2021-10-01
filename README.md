@@ -24,6 +24,21 @@ curl --location --request POST 'http://localhost:9000/v1/page/details' \
 }'
 ```
 2. Change the url to your desired one inside the body to get results of it.
+3. Below is a sample response for the above request
+```json
+{
+    "data": {
+        "html_version": "HTML 5",
+        "page_title": "Google",
+        "links_count": {
+            "internal_links_count": 27,
+            "external_links_count": 1
+        },
+        "inaccessible_links": 7,
+        "login_form_exists": true
+    }
+}
+```
 3. Test cases are written for the apis package with below coverage
 
 ```
